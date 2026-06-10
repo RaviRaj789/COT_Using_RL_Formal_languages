@@ -1,0 +1,26 @@
+[
+  {
+    "step": 1,
+    "algorithm": "ppo_process_terminal",
+    "elapsed_sec": 0.15202641487121582,
+    "train": {
+      "loss": 0.3176455795764923,
+      "policy_loss": -1.5273690223693848e-07,
+      "value_loss": 0.7735455632209778,
+      "entropy": 6.91270637512207,
+      "reward": 0.0,
+      "rollout_count": 2.0,
+      "generated_tokens_mean": 4.0,
+      "cot_tokens_mean": 4.0,
+      "cot_tokens_total": 8.0,
+      "cot_match_accuracy": 0.0,
+      "cot_match_percent": 0.0,
+      "process_match_accuracy": 0.0,
+      "process_match_percent": 0.0,
+      "output_match_accuracy": 0.0,
+      "output_match_percent": 0.0,
+      "exact_match_accuracy": 0.0,
+      "exact_match_percent": 0.0
+    }
+  }
+]

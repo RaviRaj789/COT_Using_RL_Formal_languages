@@ -1,0 +1,23 @@
+run_name: parity_sft
+seed: 0
+task:
+  name: parity
+algorithm:
+  name: sft
+train:
+  steps: 1000
+  batch_size: 64
+  lr: 0.0003
+  train_min_len: 1
+  train_max_len: 40
+  log_every: 50
+  eval_every: 200
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  dropout: 0.0
+generation:
+  temperature: 1.0
+  max_new_tokens: 520

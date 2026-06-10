@@ -1,0 +1,2121 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 2367 >>
+stream
+BT
+/F1 20 Tf
+1 0 0 1 54 738.00 Tm
+(Formal RL Length Generalization) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(A technical handbook for the `formal_rl_length_generalization` implementation.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(Date: June 4, 2026) Tj
+/F1 14 Tf
+1 0 0 1 54 626.00 Tm
+(Preface) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(This handbook explains the theory and implementation behind the) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(`formal_rl_length_generalization` project. The project studies whether small autoregressive) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(Transformer policies can learn length-generalizing algorithms for formal-language) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(recognition when trained with PPO or GRPO and oracle process rewards.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(The core experimental question is whether dense rewards on intermediate reasoning states) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(help a model learn an algorithm, rather than merely fitting short training examples.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(The codebase implements four task families:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(- parity) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(- modular counting with `k = 3` and `k = 5`) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(- `a*b*`) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(- `a^n b^n`) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(It supports seven training regimes:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(- supervised CoT baseline) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(- PPO terminal-only reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(- PPO oracle process reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(- PPO process plus terminal reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(- GRPO terminal-only reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(- GRPO oracle process reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(- GRPO process plus terminal reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(Training lengths are restricted to:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(n = 1, 2, ..., 40) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(OOD evaluation lengths are:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(41-80) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(81-160) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(161-320) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 1 of 20) Tj
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Length 2009 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(321-500) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(The intended scientific discipline is important: do not train or tune on OOD lengths.) Tj
+/F1 14 Tf
+1 0 0 1 54 654.00 Tm
+(1. Research Question) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(The main question is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(Can small Transformer policies trained with PPO/GRPO and oracle process rewards) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(learn length-generalizing algorithms for formal languages better than) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(terminal-only RL?) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(The hypothesis is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(process reward -> better state tracking -> more algorithmic policy ->) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(better length generalization) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(The point is not merely to obtain high training accuracy. The point is to see whether the) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(learned policy extrapolates from short inputs to much longer ones.) Tj
+/F1 14 Tf
+1 0 0 1 54 346.00 Tm
+(2. General Problem Setup) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(Each task defines an input sequence:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(x = \(x_1, x_2, ..., x_n\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(an oracle intermediate state trace:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(s = \(s_1, s_2, ..., s_n\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(and a final answer:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(y_final) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(```) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 2 of 20) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 1957 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(The model receives a prompt:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(TASK <task_name> INPUT x_1 x_2 ... x_n TRACE) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(and must generate:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(s_1 s_2 ... s_n FINAL y_final) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(For `a^n b^n`, the trace contains two tokens per timestep:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(phase_t BAL_balance_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(so the target is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(phase_1 BAL_b1 phase_2 BAL_b2 ... phase_n BAL_bn FINAL accept/reject) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(The model is therefore trained not only to classify a string, but also to emit an explicit) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(computation trace.) Tj
+/F1 14 Tf
+1 0 0 1 54 332.00 Tm
+(3. Reward Decomposition) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(All RL algorithms use two basic reward components.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(The process reward measures correctness of the intermediate trace:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(R_process = average intermediate-state correctness) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(The terminal reward measures correctness of the final answer:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(R_terminal = 1[predicted final answer is correct]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(The combined reward mode is:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 3 of 20) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1910 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(R = lambda_p R_process + lambda_T R_terminal) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(where `lambda_p` is `process_weight` and `lambda_T` is `terminal_weight`.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(The three RL reward modes are:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(terminal-only:          R = R_terminal) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(process-only:           R = R_process) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(process-plus-terminal:  R = lambda_p R_process + lambda_T R_terminal) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(```) Tj
+/F1 14 Tf
+1 0 0 1 54 528.00 Tm
+(4. Task 1: Parity) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(The parity language is the set of binary strings with even parity.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(Input symbols:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(x_t in {0, 1}) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(The hidden state is a parity bit:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(p_0 = 0) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(p_t = p_{t-1} XOR x_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(The trace is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(p_1 p_2 ... p_n) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(The final answer is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(p_n) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(In the implementation, states are emitted as `P0` and `P1`.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(The process reward is:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 4 of 20) Tj
+ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1855 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(R_process = \(1/n\) sum_{t=1}^n 1[hat_p_t = p_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(The terminal reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(R_terminal = 1[hat_p_final = p_n]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(Parity is a regular language and should be solvable with one bit of memory. It is a sanity-) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(check task for algorithmic state tracking.) Tj
+/F1 14 Tf
+1 0 0 1 54 528.00 Tm
+(5. Task 2: Modular Counting) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(The modular counting task asks whether the number of `1` symbols is divisible by `k`.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(The implementation supports:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(k = 3) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(k = 5) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(The state is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(c_0 = 0) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(c_t = \(c_{t-1} + x_t\) mod k) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(The final accept condition is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(accept iff c_n = 0) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(The process reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(R_process = \(1/n\) sum_{t=1}^n 1[hat_c_t = c_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(The terminal reward is:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 5 of 20) Tj
+ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 2047 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(R_terminal = 1[hat_accept = accept]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(This is also regular, but it requires a cyclic state machine with `k` states.) Tj
+/F1 14 Tf
+1 0 0 1 54 640.00 Tm
+(6. Task 3: a*b*) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(The language `a*b*` contains strings with zero or more `a`s followed by zero or more `b`s.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(Once `b` appears, no `a` may appear afterward.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(The DFA states are:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(S0 = still reading a's) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(S1 = reading b's) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(S2 = dead/invalid) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(The transition function is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(delta\(S0, a\) = S0) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(delta\(S0, b\) = S1) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(delta\(S1, b\) = S1) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(delta\(S1, a\) = S2) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(delta\(S2, a\) = S2) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(delta\(S2, b\) = S2) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(The accept condition is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(accept iff s_n in {S0, S1}) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(The process reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(R_process = \(1/n\) sum_{t=1}^n 1[hat_s_t = s_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(The terminal reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(R_terminal = 1[hat_accept = accept]) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 6 of 20) Tj
+ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 1966 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(This task tests phase tracking and invalid-state detection.) Tj
+/F1 14 Tf
+1 0 0 1 54 668.00 Tm
+(7. Task 4: a^n b^n) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(The language `a^n b^n` is context-free. A valid string has a block of `a`s followed by an) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(equally long block of `b`s.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(The implementation uses a canonical state with two components:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(phase_t in {A_PHASE, B_PHASE, DEAD}) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(balance_t = count_a_t - count_b_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(Counts are:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(count_a_t = number of a's seen up to time t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(count_b_t = number of b's seen up to time t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(The balance is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(balance_t = count_a_t - count_b_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(The phase tracks whether the sequence is still in the `a` block, has entered the `b` block,) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(or has become invalid.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(The model emits:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(phase_t BAL_balance_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(at every timestep.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(The phase reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(R_phase\(t\) = 1[hat_phase_t = phase_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(```) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 7 of 20) Tj
+ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 1908 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(The balance reward is shaped:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(R_balance\(t\) = 1 - min\(abs\(hat_balance_t - balance_t\), cap\) / cap) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(with:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(cap = 500) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(The per-step reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(r_t = 0.5 R_phase\(t\) + 0.5 R_balance\(t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(The process reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(R_process = \(1/n\) sum_{t=1}^n r_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(The terminal reward is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(R_terminal = 1[hat_accept = accept]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(This is the hardest task because the correct solution resembles a counter or stack-like) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(computation.) Tj
+/F1 14 Tf
+1 0 0 1 54 262.00 Tm
+(8. Tokenization) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(The tokenizer is a fixed symbolic tokenizer. There is no BPE, no learned tokenizer, and no) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(subword splitting.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(Special tokens:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(<pad>) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(<bos>) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(<eos>) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(TASK) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(INPUT) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 8 of 20) Tj
+ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 1973 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(TRACE) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(FINAL) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(Task and state tokens include:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(0, 1, a, b) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(P0, P1) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(C0, C1, ...) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(S0, S1, S2) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(A_PHASE, B_PHASE, DEAD) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(BAL_-500 ... BAL_500) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(ACCEPT, REJECT) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(This makes the experiment cleaner: the model is not spending capacity discovering a) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(representation for symbols. It is learning the transition behavior over already-symbolic) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(tokens.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(Encoding:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(token -> integer ID) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(Decoding:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(integer ID -> token) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(Batches are padded with `<pad>`. Prompt positions are masked out of the supervised loss and) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(RL action loss.) Tj
+/F1 14 Tf
+1 0 0 1 54 234.00 Tm
+(9. Transformer Architecture) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(The model is a causal Transformer policy.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(For input token IDs:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(z_1, z_2, ..., z_T) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(the model forms:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 9 of 20) Tj
+ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 1876 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(h_t^0 = E_token\(z_t\) + E_pos\(t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(where `E_token` is the token embedding and `E_pos` is the positional embedding.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(The causal attention mask is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(M_ij = 0          if j <= i) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(M_ij = -infinity  if j > i) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(So position `i` can only attend to positions up to `i`.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(After the Transformer stack, the final hidden state is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(h_t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(The policy head produces logits:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(logits_t = W_pi h_t + b_pi) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(The token distribution is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(pi_theta\(a_t | z_<=t\) = softmax\(logits_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(The value head produces:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(V_theta\(z_<=t\) = W_V h_t + b_V) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(The policy head is used by SFT, PPO, and GRPO. The value head is used by PPO.) Tj
+/F1 14 Tf
+1 0 0 1 54 136.00 Tm
+(10. Autoregressive Generation) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(Given prompt `q`, the model samples:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 10 of 20) Tj
+ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 2027 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(a_t ~ pi_theta\(. | q, a_1, ..., a_{t-1}\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(The full sampled completion probability is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(pi_theta\(a_1:m | q\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(= product_{t=1}^m pi_theta\(a_t | q, a_<t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(The log probability is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(log pi_theta\(a_1:m | q\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(= sum_{t=1}^m log pi_theta\(a_t | q, a_<t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(Generation stops when `<eos>` is sampled or when `max_new_tokens` is reached.) Tj
+/F1 14 Tf
+1 0 0 1 54 444.00 Tm
+(11. Supervised CoT Baseline) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(The supervised baseline trains the model with oracle traces by teacher forcing.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(Prompt:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(q = TASK task INPUT x_1 ... x_n TRACE) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(Target:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(y = s_1 s_2 ... s_n FINAL y_final <eos>) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(The SFT loss is cross-entropy over target positions only:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(L_SFT\(theta\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(= -\(1/M\) sum_{t=1}^M log pi_theta\(y_t | q, y_<t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(Prompt tokens do not contribute to the loss.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(The token accuracy metric is:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 11 of 20) Tj
+ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 22 0 R >>
+endobj
+24 0 obj
+<< /Length 1880 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(Acc_token) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(= \(1/M\) sum_{t=1}^M 1[argmax_a pi_theta\(a | q, y_<t\) = y_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(SFT directly teaches the oracle computation trace. The RL variants instead reward traces) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(after the policy samples them.) Tj
+/F1 14 Tf
+1 0 0 1 54 598.00 Tm
+(12. Reinforcement Learning View) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(In RL, the model is a policy:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(pi_theta\(a_t | s_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(where the RL state is the autoregressive prefix:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(s_t = \(q, a_<t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(A rollout is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(tau = \(q, a_1, ..., a_m\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(The objective is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(J\(theta\) = E_{tau ~ pi_theta}[R\(tau\)]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(The policy-gradient identity is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(grad_theta J\(theta\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(= E[sum_t grad_theta log pi_theta\(a_t | s_t\) A_t]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(The main question is how to define the advantage `A_t`.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(PPO uses:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 12 of 20) Tj
+ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 24 0 R >>
+endobj
+26 0 obj
+<< /Length 1945 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(A_t = R_t - V_theta\(s_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(GRPO uses group-relative reward:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(A_i,k = \(R_i,k - mean_k R_i,k\) / \(std_k R_i,k + epsilon\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(```) Tj
+/F1 14 Tf
+1 0 0 1 54 584.00 Tm
+(13. PPO) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(PPO compares the new policy to the old rollout policy.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(The probability ratio is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(rho_t\(theta\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(= pi_theta\(a_t | s_t\) / pi_theta_old\(a_t | s_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(Using log probabilities:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(rho_t\(theta\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(= exp\(log pi_theta\(a_t | s_t\) - log pi_theta_old\(a_t | s_t\)\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(The clipped PPO objective is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(L_clip\(theta\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(= E[min\(rho_t A_t,) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(clip\(rho_t, 1-epsilon, 1+epsilon\) A_t\)]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(The minimized policy loss is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(L_policy = -L_clip) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(The value loss is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(L_value = E[\(V_theta\(s_t\) - R_t\)^2]) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 13 of 20) Tj
+ET
+endstream
+endobj
+27 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 26 0 R >>
+endobj
+28 0 obj
+<< /Length 1930 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(The entropy bonus is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(H = - sum_a pi_theta\(a | s_t\) log pi_theta\(a | s_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(The total PPO loss is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(L_PPO = L_policy + c_v L_value - c_H H) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(where:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(c_v = value_coef) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(c_H = entropy_coef) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(In this implementation, the rollout receives one scalar reward, and that reward is broadcast) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(to all generated action positions:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(R_t = R for all generated t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(This is a simple sequence-level PPO scaffold. A more advanced implementation could use) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(token-aligned process rewards and reward-to-go.) Tj
+/F1 14 Tf
+1 0 0 1 54 290.00 Tm
+(14. GRPO) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(GRPO samples multiple completions for the same prompt.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(For prompt `q_i`, sample:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(a_i,1, a_i,2, ..., a_i,K) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(Each completion receives reward:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(R_i,k) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(```) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 14 of 20) Tj
+ET
+endstream
+endobj
+29 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 28 0 R >>
+endobj
+30 0 obj
+<< /Length 1928 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(The group mean is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(mu_i = \(1/K\) sum_{k=1}^K R_i,k) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(The group standard deviation is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(sigma_i = sqrt\(\(1/K\) sum_{k=1}^K \(R_i,k - mu_i\)^2\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(The group-relative advantage is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(A_i,k = \(R_i,k - mu_i\) / \(sigma_i + epsilon\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(The clipped GRPO loss is PPO-like:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(L_GRPO_policy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(= -mean_{i,k,t} min\(rho_i,k,t A_i,k,) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(clip\(rho_i,k,t, 1-epsilon, 1+epsilon\) A_i,k\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(GRPO also uses entropy regularization:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(L_GRPO = L_GRPO_policy - c_H H) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(There is no value loss in GRPO:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(L_value is absent) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(This is the key difference:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(PPO baseline  = learned value model) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(GRPO baseline = relative performance among samples for the same prompt) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 15 of 20) Tj
+ET
+endstream
+endobj
+31 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 30 0 R >>
+endobj
+32 0 obj
+<< /Length 2050 >>
+stream
+BT
+/F1 14 Tf
+1 0 0 1 54 724.00 Tm
+(15. Why Process Rewards Help) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(Terminal-only reward asks:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(Was the final answer correct?) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(Process reward asks:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(Was the computation correct at each prefix?) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(For parity, the process reward checks whether the model updates the parity bit after every) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(input bit.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 472.00 Tm
+(For modular counting, it checks the residue class after every input.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(For `a*b*`, it checks the DFA state.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(For `a^n b^n`, it checks phase and balance.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(This is a much richer learning signal. It encourages the model to implement the recurrence:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(s_t = f\(s_{t-1}, x_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(instead of only learning a shortcut to the final label.) Tj
+/F1 14 Tf
+1 0 0 1 54 262.00 Tm
+(16. Length Generalization) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(The train set only contains lengths up to 40. A non-algorithmic model can exploit this. It) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(may memorize short templates or learn length-specific heuristics.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(Length generalization requires the learned transition rule to remain valid for longer) Tj
+/F1 10.5 Tf
+1 0 0 1 54 164.00 Tm
+(sequences:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(s_t = f\(s_{t-1}, x_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 80.00 Tm
+(For parity:) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 16 of 20) Tj
+ET
+endstream
+endobj
+33 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 32 0 R >>
+endobj
+34 0 obj
+<< /Length 1920 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 724.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(f\(p, x\) = p XOR x) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 668.00 Tm
+(For modular counting:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(f\(c, x\) = \(c + x\) mod k) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(For `a*b*`, `f` is the DFA transition function.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(For `a^n b^n`, `f` updates phase and balance.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(The central bet of the project is that rewarding the intermediate state makes this) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(transition rule easier to learn.) Tj
+/F1 14 Tf
+1 0 0 1 54 472.00 Tm
+(17. Evaluation Metrics) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(The implementation reports three main metrics.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(Process score:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 374.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(mean R_process) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(Terminal score:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(mean R_terminal) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(Exact score:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 192.00 Tm
+(1[generated target prefix exactly equals oracle target]) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(Exact score is strict. A model can have useful process behavior but fail exact match because) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(of formatting mistakes. Terminal score is useful for language recognition, while process) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(score is useful for diagnosing whether the model learned the intended computation.) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 17 of 20) Tj
+ET
+endstream
+endobj
+35 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 34 0 R >>
+endobj
+36 0 obj
+<< /Length 2532 >>
+stream
+BT
+/F1 14 Tf
+1 0 0 1 54 724.00 Tm
+(18. Implementation Map) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(The major files are:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(tasks.py       task generators, oracle traces, rewards) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(tokenizer.py   fixed symbolic tokenizer) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(model.py       causal Transformer policy and value model) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(train.py       SFT/PPO/GRPO training entrypoint) Tj
+/F1 10.5 Tf
+1 0 0 1 54 584.00 Tm
+(rl.py          rollout collection and PPO/GRPO updates) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(evaluate.py    length-bucket evaluation utilities) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(eval.py        checkpoint evaluation CLI) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(configs/       example experiment configs) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(The implementation is intentionally compact so that experiments can be modified quickly.) Tj
+/F1 14 Tf
+1 0 0 1 54 458.00 Tm
+(19. Important Limitations) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(The current codebase is a research scaffold, not a full production RLHF implementation.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(Important limitations:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(- PPO broadcasts one sequence-level reward to all generated tokens.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 346.00 Tm
+(- The process reward is computed after generation rather than inserted as per-token reward) Tj
+/F1 10.5 Tf
+1 0 0 1 54 332.00 Tm
+(  during rollout.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 318.00 Tm
+(- PPO does not yet implement full reward-to-go or GAE.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(- There is no KL penalty against a frozen reference model.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 290.00 Tm
+(- Evaluation up to length 500 can be slow on CPU.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(- The generation format is strict; malformed traces may receive poor reward even when) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(  partially meaningful.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(These limitations are useful future improvement points.) Tj
+/F1 14 Tf
+1 0 0 1 54 192.00 Tm
+(20. Natural Next Extensions) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(A stronger PPO implementation would use token-aligned process reward:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 108.00 Tm
+(r_t = oracle reward for the generated state token at time t) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(```) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 18 of 20) Tj
+ET
+endstream
+endobj
+37 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 36 0 R >>
+endobj
+38 0 obj
+<< /Length 2212 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(Then reward-to-go would be:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(G_t = sum_{u=t}^T gamma^\(u-t\) r_u) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(GAE would use:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 626.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 612.00 Tm
+(delta_t = r_t + gamma V\(s_{t+1}\) - V\(s_t\)) Tj
+/F1 10.5 Tf
+1 0 0 1 54 598.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 570.00 Tm
+(and:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(A_t^GAE = sum_l \(gamma lambda\)^l delta_{t+l}) Tj
+/F1 10.5 Tf
+1 0 0 1 54 514.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(Other extensions:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(- frozen reference policy and KL penalty) Tj
+/F1 10.5 Tf
+1 0 0 1 54 444.00 Tm
+(- deterministic decoding for evaluation) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(- curriculum schedules within `n <= 40`) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(- per-length plots instead of only bucket averages) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(- multiple seeds and confidence intervals) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(- recurrent or stack-augmented baselines) Tj
+/F1 14 Tf
+1 0 0 1 54 346.00 Tm
+(21. How to Interpret Results) Tj
+/F1 10.5 Tf
+1 0 0 1 54 304.00 Tm
+(Strong evidence for algorithmic learning would be:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 276.00 Tm
+(- high training process accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 262.00 Tm
+(- high training terminal accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 248.00 Tm
+(- high OOD process accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 234.00 Tm
+(- high OOD terminal accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 220.00 Tm
+(- graceful degradation as length increases) Tj
+/F1 10.5 Tf
+1 0 0 1 54 206.00 Tm
+(- process-reward PPO/GRPO outperforming terminal-only PPO/GRPO) Tj
+/F1 10.5 Tf
+1 0 0 1 54 178.00 Tm
+(A weak result would be:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 150.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 136.00 Tm
+(high train terminal accuracy but poor OOD terminal accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 122.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 94.00 Tm
+(That suggests memorization or short-length heuristics.) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 19 of 20) Tj
+ET
+endstream
+endobj
+39 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 38 0 R >>
+endobj
+40 0 obj
+<< /Length 1578 >>
+stream
+BT
+/F1 10.5 Tf
+1 0 0 1 54 738.00 Tm
+(Another interesting result is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 710.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 696.00 Tm
+(high process accuracy but low terminal accuracy) Tj
+/F1 10.5 Tf
+1 0 0 1 54 682.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 654.00 Tm
+(That may indicate formatting or final-token problems rather than a failure to learn the) Tj
+/F1 10.5 Tf
+1 0 0 1 54 640.00 Tm
+(underlying state transition.) Tj
+/F1 14 Tf
+1 0 0 1 54 598.00 Tm
+(22. Summary) Tj
+/F1 10.5 Tf
+1 0 0 1 54 556.00 Tm
+(The project turns formal-language recognition into autoregressive trace generation. The) Tj
+/F1 10.5 Tf
+1 0 0 1 54 542.00 Tm
+(Transformer policy generates symbolic computation traces. The oracle rewards either the) Tj
+/F1 10.5 Tf
+1 0 0 1 54 528.00 Tm
+(final answer, the intermediate computation, or both.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 500.00 Tm
+(PPO uses a learned value baseline and clipped policy updates. GRPO uses multiple completions) Tj
+/F1 10.5 Tf
+1 0 0 1 54 486.00 Tm
+(for the same prompt and group-relative advantage normalization.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 458.00 Tm
+(The central scientific claim being tested is:) Tj
+/F1 10.5 Tf
+1 0 0 1 54 430.00 Tm
+(```text) Tj
+/F1 10.5 Tf
+1 0 0 1 54 416.00 Tm
+(If the model learns the true state-transition rule, it should generalize) Tj
+/F1 10.5 Tf
+1 0 0 1 54 402.00 Tm
+(beyond the lengths it saw during training.) Tj
+/F1 10.5 Tf
+1 0 0 1 54 388.00 Tm
+(```) Tj
+/F1 10.5 Tf
+1 0 0 1 54 360.00 Tm
+(Process rewards are designed to make learning that rule easier.) Tj
+/F1 9 Tf
+1 0 0 1 478 30 Tm
+(Page 20 of 20) Tj
+ET
+endstream
+endobj
+41 0 obj
+<< /Type /Page /Parent 42 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 40 0 R >>
+endobj
+42 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R 31 0 R 33 0 R 35 0 R 37 0 R 39 0 R 41 0 R] /Count 20 >>
+endobj
+43 0 obj
+<< /Type /Catalog /Pages 42 0 R >>
+endobj
+xref
+0 44
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000002497 00000 n 
+0000002624 00000 n 
+0000004684 00000 n 
+0000004811 00000 n 
+0000006819 00000 n 
+0000006946 00000 n 
+0000008907 00000 n 
+0000009034 00000 n 
+0000010941 00000 n 
+0000011070 00000 n 
+0000013169 00000 n 
+0000013298 00000 n 
+0000015316 00000 n 
+0000015445 00000 n 
+0000017405 00000 n 
+0000017534 00000 n 
+0000019559 00000 n 
+0000019688 00000 n 
+0000021616 00000 n 
+0000021745 00000 n 
+0000023824 00000 n 
+0000023953 00000 n 
+0000025885 00000 n 
+0000026014 00000 n 
+0000028011 00000 n 
+0000028140 00000 n 
+0000030122 00000 n 
+0000030251 00000 n 
+0000032231 00000 n 
+0000032360 00000 n 
+0000034462 00000 n 
+0000034591 00000 n 
+0000036563 00000 n 
+0000036692 00000 n 
+0000039276 00000 n 
+0000039405 00000 n 
+0000041669 00000 n 
+0000041798 00000 n 
+0000043428 00000 n 
+0000043557 00000 n 
+0000043746 00000 n 
+trailer
+<< /Size 44 /Root 43 0 R >>
+startxref
+43797
+%%EOF

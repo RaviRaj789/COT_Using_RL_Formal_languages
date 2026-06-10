@@ -1,0 +1,25 @@
+[
+  {
+    "step": 1,
+    "algorithm": "grpo_process_terminal",
+    "elapsed_sec": 0.20876026153564453,
+    "train": {
+      "loss": -0.06912964582443237,
+      "policy_loss": -0.0,
+      "entropy": 6.912964820861816,
+      "reward": 0.0,
+      "rollout_count": 4.0,
+      "generated_tokens_mean": 4.0,
+      "cot_tokens_mean": 4.0,
+      "cot_tokens_total": 16.0,
+      "cot_match_accuracy": 0.0,
+      "cot_match_percent": 0.0,
+      "process_match_accuracy": 0.0,
+      "process_match_percent": 0.0,
+      "output_match_accuracy": 0.0,
+      "output_match_percent": 0.0,
+      "exact_match_accuracy": 0.0,
+      "exact_match_percent": 0.0
+    }
+  }
+]

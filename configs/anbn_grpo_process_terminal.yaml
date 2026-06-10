@@ -1,0 +1,29 @@
+run_name: anbn_grpo_process_terminal
+seed: 2
+task:
+  name: an_bn
+algorithm:
+  name: grpo_process_terminal
+  groups_per_step: 16
+  samples_per_prompt: 4
+  clip_eps: 0.2
+  entropy_coef: 0.01
+  process_weight: 1.0
+  terminal_weight: 1.0
+train:
+  steps: 1000
+  batch_size: 16
+  lr: 0.0001
+  train_min_len: 1
+  train_max_len: 40
+  log_every: 50
+  eval_every: 200
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  dropout: 0.0
+generation:
+  temperature: 1.0
+  max_new_tokens: 1200

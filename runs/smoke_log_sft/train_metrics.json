@@ -1,0 +1,11 @@
+[
+  {
+    "step": 1,
+    "algorithm": "sft",
+    "elapsed_sec": 0.31859827041625977,
+    "train": {
+      "loss": 7.176451683044434,
+      "token_acc": 0.0
+    }
+  }
+]

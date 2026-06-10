@@ -1,0 +1,32 @@
+run_name: parity_ppo_process_terminal
+seed: 1
+task:
+  name: parity
+algorithm:
+  name: ppo_process_terminal
+  rollout_batch_size: 32
+  ppo_epochs: 4
+  clip_eps: 0.2
+  value_coef: 0.5
+  entropy_coef: 0.01
+  gamma: 1.0
+  lam: 0.95
+  process_weight: 1.0
+  terminal_weight: 1.0
+train:
+  steps: 1000
+  batch_size: 32
+  lr: 0.0001
+  train_min_len: 1
+  train_max_len: 40
+  log_every: 50
+  eval_every: 200
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  dropout: 0.0
+generation:
+  temperature: 1.0
+  max_new_tokens: 520
