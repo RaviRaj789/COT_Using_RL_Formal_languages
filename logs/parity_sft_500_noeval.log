@@ -1,0 +1,3 @@
+usage: train.py [-h] --config CONFIG [--steps STEPS] [--batch-size BATCH_SIZE]
+                [--log-every LOG_EVERY]
+train.py: error: unrecognized arguments: --eval-every 1000

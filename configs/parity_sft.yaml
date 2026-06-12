@@ -11,7 +11,7 @@ train:
   train_min_len: 1
   train_max_len: 40
   log_every: 50
-  eval_every: 200
+  eval_every: 1000
 model:
   d_model: 128
   n_heads: 4
