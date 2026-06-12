@@ -1,4 +1,5 @@
 import argparse
+import copy
 import random
 import time
 from pathlib import Path
@@ -83,7 +84,8 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
     device = device_auto()
     tokenizer = Tokenizer.default()
     task = build_task(cfg["task"]["name"])
-    model = build_model(cfg, tokenizer).to(device)
+
+    checkpoint_cfg = None
     if init_from_checkpoint:
         ckpt_path = Path(init_from_checkpoint)
         if not ckpt_path.exists():
@@ -91,6 +93,21 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
         ckpt = torch.load(ckpt_path, map_location=device)
         if "model" not in ckpt:
             raise ValueError(f"Checkpoint at {ckpt_path} does not contain 'model' weights")
+        checkpoint_cfg = ckpt.get("config", {})
+        if checkpoint_cfg.get("model"):
+            current_model_cfg = copy.deepcopy(cfg.get("model", {}))
+            checkpoint_model_cfg = checkpoint_cfg.get("model", {})
+            if current_model_cfg != checkpoint_model_cfg:
+                print(
+                    "Checkpoint model architecture differs from the current config; using the checkpoint's model settings for warm-start.",
+                    flush=True,
+                )
+                cfg = copy.deepcopy(cfg)
+                cfg["model"] = {**current_model_cfg, **checkpoint_model_cfg}
+
+    model = build_model(cfg, tokenizer).to(device)
+    if init_from_checkpoint:
+        ckpt = torch.load(ckpt_path, map_location=device)
         model.load_state_dict(ckpt["model"])
         print(f"Loaded pretrained weights from {ckpt_path}", flush=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg["train"].get("lr", 3e-4))
