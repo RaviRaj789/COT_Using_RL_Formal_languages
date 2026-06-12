@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from typing import List, Protocol, Sequence
+from typing import List, Optional, Protocol, Sequence
 
 
 TRAIN_MIN_LEN = 1
@@ -191,7 +191,7 @@ class ANBNTask:
         ]
 
 
-def _parse_balance(token: str) -> int | None:
+def _parse_balance(token: str) -> Optional[int]:
     if not token.startswith("BAL_"):
         return None
     try:

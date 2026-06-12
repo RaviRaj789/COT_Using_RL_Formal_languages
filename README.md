@@ -15,6 +15,19 @@ python -m formal_rl_length_generalization.train --config configs/parity_sft.yaml
 python -m formal_rl_length_generalization.eval --checkpoint runs/parity_sft/checkpoint.pt
 ```
 
+### Warm-start RL from an existing SFT checkpoint
+
+Use a new run name in your config so the RL checkpoint is saved into a separate folder, while the original SFT checkpoint stays untouched.
+
+```bash
+python -m formal_rl_length_generalization.train \
+  --config configs/parity_ppo_process_terminal.yaml \
+  --steps 1000 \
+  --init-from-checkpoint runs/parity_sft/checkpoint.pt
+```
+
+If you want the RL run to live in its own folder, set a different `run_name` in `configs/parity_ppo_process_terminal.yaml` before starting.
+
 ## Algorithms
 
 - `sft`: supervised chain-of-thought baseline

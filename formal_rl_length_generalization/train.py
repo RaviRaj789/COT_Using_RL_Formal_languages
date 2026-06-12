@@ -2,6 +2,7 @@ import argparse
 import random
 import time
 from pathlib import Path
+from typing import Optional
 
 import torch
 import torch.nn.functional as F
@@ -77,12 +78,21 @@ def sft_step(model, optimizer, tokenizer, examples, device):
     return {"loss": float(loss.item()), "token_acc": float(acc.item())}
 
 
-def train(cfg: dict) -> Path:
+def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
     rng = seed_everything(cfg.get("seed", 0))
     device = device_auto()
     tokenizer = Tokenizer.default()
     task = build_task(cfg["task"]["name"])
     model = build_model(cfg, tokenizer).to(device)
+    if init_from_checkpoint:
+        ckpt_path = Path(init_from_checkpoint)
+        if not ckpt_path.exists():
+            raise FileNotFoundError(f"Checkpoint not found: {ckpt_path}")
+        ckpt = torch.load(ckpt_path, map_location=device)
+        if "model" not in ckpt:
+            raise ValueError(f"Checkpoint at {ckpt_path} does not contain 'model' weights")
+        model.load_state_dict(ckpt["model"])
+        print(f"Loaded pretrained weights from {ckpt_path}", flush=True)
     optimizer = torch.optim.AdamW(model.parameters(), lr=cfg["train"].get("lr", 3e-4))
     run_dir = Path("runs") / cfg.get("run_name", f"{task.name}_{cfg['algorithm']['name']}")
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -187,6 +197,7 @@ def main() -> None:
     parser.add_argument("--steps", type=int)
     parser.add_argument("--batch-size", type=int)
     parser.add_argument("--log-every", type=int)
+    parser.add_argument("--init-from-checkpoint", type=str, help="Load model weights from an existing checkpoint before RL training")
     args = parser.parse_args()
     cfg = load_config(args.config)
     if args.steps is not None:
@@ -195,7 +206,7 @@ def main() -> None:
         cfg["train"]["batch_size"] = args.batch_size
     if args.log_every is not None:
         cfg["train"]["log_every"] = args.log_every
-    path = train(cfg)
+    path = train(cfg, init_from_checkpoint=args.init_from_checkpoint)
     print(path)
 
 

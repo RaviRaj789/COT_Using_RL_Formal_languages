@@ -1,0 +1,295 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+
+\title{Formal RL Length Generalization: Model Architecture, Objectives, and Training Strategy}
+\author{Project Notes}
+\date{June 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Overview}
+This document summarizes the core ideas behind the project:\par
+\emph{formal\_rl\_length\_generalization}. The goal is to study whether small autoregressive Transformer policies can learn algorithmic behavior for formal-language recognition and generalize to longer input lengths than those seen during training.
+
+The project uses symbolic traces and oracle rewards for tasks such as:
+\begin{itemize}[leftmargin=*]
+  \item parity
+  \item modular counting with $k=3$ or $k=5$
+  \item $a^*b^*$
+  \item $a^n b^n$
+\end{itemize}
+
+Training lengths are restricted to $n \in \{1,2,\dots,40\}$, while evaluation also includes out-of-distribution buckets $41$--$80$, $81$--$160$, $161$--$320$, and $321$--$500$.
+
+\section{Problem Setup}
+For each example, the model receives a prompt of the form
+\[
+\text{TASK } \langle task\_name \rangle \text{ INPUT } x_1 x_2 \cdots x_n \text{ TRACE}
+\]
+It must generate a symbolic trace and final answer:
+\[
+s_1 s_2 \cdots s_n \text{ FINAL } y_{final}.
+\]
+
+The trace is an explicit intermediate computation, not just the final label.
+
+\section{Reward Decomposition}
+The RL reward is decomposed into two parts:
+\begin{align*}
+R_{process} &= \text{fraction of intermediate trace states that are correct},\\
+R_{terminal} &= \mathbf{1}[\text{final answer is correct}].
+\end{align*}
+
+The combined reward used by the project is
+\[
+R = w_p R_{process} + w_t R_{terminal},
+\]
+where $w_p$ is the process weight and $w_t$ is the terminal weight.
+
+The three reward modes are:
+\begin{align*}
+R &= R_{terminal} \qquad \text{(terminal only)},\\
+R &= R_{process} \qquad \text{(process only)},\\
+R &= w_p R_{process} + w_t R_{terminal} \qquad \text{(process + terminal)}.
+\end{align*}
+
+\section{Task-Specific Reward Forms}
+
+\subsection{Parity}
+The hidden parity state is
+\[
+p_0 = 0, \qquad p_t = p_{t-1} \oplus x_t.
+\]
+The process reward is
+\[
+R_{process} = \frac1n \sum_{t=1}^{n} \mathbf{1}[\hat p_t = p_t].
+\]
+The terminal reward is
+\[
+R_{terminal} = \mathbf{1}[\hat p_n = p_n].
+\]
+
+\subsection{Modular Counting}
+The state is
+\[
+c_0 = 0, \qquad c_t = (c_{t-1}+x_t) \bmod k.
+\]
+The final answer is ACCEPT iff $c_n=0$.
+The process reward is
+\[
+R_{process} = \frac1n \sum_{t=1}^{n} \mathbf{1}[\hat c_t = c_t].
+\]
+
+\subsection{a$^*$b$^*$}
+The DFA states are
+\[
+S_0,\ S_1,\ S_2,
+\]
+with transitions
+\begin{align*}
+\delta(S_0,a)&=S_0,\quad \delta(S_0,b)=S_1,\\
+\delta(S_1,b)&=S_1,\quad \delta(S_1,a)=S_2,\\
+\delta(S_2,a)&=S_2,\quad \delta(S_2,b)=S_2.
+\end{align*}
+The process reward is the fraction of correctly predicted DFA states along the trace.
+
+\subsection{$a^n b^n$}
+The implementation tracks
+\[
+phase_t \in \{A\_PHASE,	ext{ }B\_PHASE,	ext{ }DEAD\},
+\qquad balance_t = count_a_t - count_b_t.
+\]
+A per-step reward is
+\[
+ r_t = 0.5 R_{phase}(t) + 0.5 R_{balance}(t),
+\]
+where
+\[
+R_{phase}(t)=\mathbf{1}[\hat phase_t = phase_t],
+\]
+and
+\[
+R_{balance}(t)=1-\frac{\min(|\hat balance_t-balance_t|,cap)}{cap},\qquad cap=500.
+\]
+Then
+\[
+R_{process} = \frac1n \sum_{t=1}^{n} r_t.
+\]
+
+\section{Model Architecture}
+The policy is a causal Transformer.
+
+For input tokens $z_1,\dots,z_T$ the model forms
+\[
+ h_t^{(0)} = E_{token}(z_t) + E_{pos}(t).
+\]
+The causal attention mask ensures that position $t$ can only attend to positions $\le t$.
+
+After the Transformer stack, the final hidden state is $h_t$.
+
+The policy head outputs logits
+\[
+logits_t = W_\pi h_t + b_\pi,
+\]
+so that
+\[
+\pi_\theta(a_t \mid z_{\le t}) = \mathrm{softmax}(logits_t).
+\]
+
+The value head produces
+\[
+V_\theta(z_{\le t}) = W_V h_t + b_V.
+\]
+The value head is used in PPO; the policy head is used in SFT, PPO, and GRPO.
+
+\section{Autoregressive Generation}
+Given a prompt $q$, the model samples
+\[
+ a_t \sim \pi_\theta(\cdot \mid q,a_1,\dots,a_{t-1}).
+\]
+The full completion probability is
+\[
+\pi_\theta(a_{1:m}\mid q)=\prod_{t=1}^{m}\pi_\theta(a_t\mid q,a_{<t}).
+\]
+The log-probability is
+\[
+\log \pi_\theta(a_{1:m}\mid q)=\sum_{t=1}^{m}\log \pi_\theta(a_t\mid q,a_{<t}).
+\]
+Generation stops when $\langle eos \rangle$ is generated or when the token budget is exhausted.
+
+\section{Supervised CoT Baseline (SFT)}
+The SFT objective is cross-entropy over the teacher-forced oracle trace and final answer:
+\[
+L_{SFT}(\theta)= -\frac1M\sum_{t=1}^{M}\log \pi_\theta(y_t \mid q, y_{<t}).
+\]
+The token accuracy is
+\[
+Acc_{token} = \frac1M \sum_{t=1}^{M}\mathbf{1}[\arg\max_a \pi_\theta(a\mid q,y_{<t})=y_t].
+\]
+
+\section{RL Objective}
+The RL objective is
+\[
+J(\theta)=\mathbb E_{\tau\sim \pi_\theta}[R(\tau)].
+\]
+The policy-gradient identity is
+\[
+\nabla_\theta J(\theta)=\mathbb E\Big[\sum_t \nabla_\theta \log \pi_\theta(a_t\mid s_t) A_t\Big].
+\]
+
+\subsection{PPO}
+The probability ratio is
+\[
+\rho_t(\theta)=\frac{\pi_\theta(a_t\mid s_t)}{\pi_{\theta_{old}}(a_t\mid s_t)}.
+\]
+The clipped PPO objective is
+\[
+L_{clip}(\theta)=\mathbb E\Big[\min\big(\rho_t A_t,	ext{ clip}(\rho_t,1-\epsilon,1+\epsilon)A_t\big)\Big].
+\]
+The policy loss is
+\[
+L_{policy}=-L_{clip}.
+\]
+The value loss is
+\[
+L_{value}=\mathbb E[(V_\theta(s_t)-R_t)^2].
+\]
+The entropy bonus is
+\[
+H=-\sum_a \pi_\theta(a\mid s_t)\log \pi_\theta(a\mid s_t).
+\]
+The full PPO loss is
+\[
+L_{PPO}=L_{policy}+c_v L_{value}-c_H H.
+\]
+
+\subsection{GRPO}
+For one prompt, GRPO samples multiple completions $a_{i,1},\dots,a_{i,K}$ and computes rewards $R_{i,k}$.
+The group mean is
+\[
+\mu_i = \frac1K \sum_{k=1}^{K} R_{i,k},
+\]
+and the group standard deviation is
+\[
+\sigma_i = \sqrt{\frac1K \sum_{k=1}^{K}(R_{i,k}-\mu_i)^2 }.
+\]
+The group-relative advantage is
+\[
+A_{i,k}=\frac{R_{i,k}-\mu_i}{\sigma_i+\epsilon}.
+\]
+The GRPO policy loss is
+\[
+L_{GRPO}^{policy}= -\mathbb E\Big[\min(\rho_{i,k,t}A_{i,k},\text{clip}(\rho_{i,k,t},1-\epsilon,1+\epsilon)A_{i,k})\Big],
+\]
+with the total loss
+\[
+L_{GRPO}=L_{GRPO}^{policy}-c_H H.
+\]
+
+\section{Training Strategy}
+The training pipeline has four main stages:
+\begin{enumerate}[leftmargin=*]
+  \item sample random task instances of length $1\dots 40$,
+  \item generate a completion with the current policy,
+  \item compute oracle reward from the formal task,
+  \item update the policy with SFT, PPO, or GRPO.
+\end{enumerate}
+
+Key practical factors are:
+\begin{itemize}[leftmargin=*]
+  \item reward weighting $w_p$ and $w_t$,
+  \item clip epsilon $\epsilon$,
+  \item entropy coefficient $c_H$,
+  \item value coefficient $c_v$,
+  \item temperature and max token budget,
+  \item number of PPO epochs or GRPO samples per prompt.
+\end{itemize}
+
+\section{Evaluation}
+The evaluation reports three main quantities:
+\begin{align*}
+\text{Process score} &= \text{mean } R_{process},\\
+\text{Terminal score} &= \text{mean } R_{terminal},\\
+\text{Exact score} &= \mathbf{1}[\text{generated trace + final answer exactly matches target}].
+\end{align*}
+
+The evaluation buckets are:
+\begin{itemize}[leftmargin=*]
+  \item $1$--$40$ (training lengths),
+  \item $41$--$80$,
+  \item $81$--$160$,
+  \item $161$--$320$,
+  \item $321$--$500$.
+\end{itemize}
+
+\section{Why the Project Matters}
+The central hypothesis is that dense, intermediate process rewards help the model learn the true transition rule
+\[
+ s_t = f(s_{t-1},x_t),
+\]
+which should improve length generalization beyond the train lengths.
+
+If the model only learns a shortcut for final correctness, it may perform well on $1$--$40$ but fail on longer inputs. Process rewards are intended to make the learned algorithm more faithful to the underlying formal computation.
+
+\section{Important Limitations}
+The current codebase is a research scaffold rather than a full production RLHF implementation. Important limitations include:
+\begin{itemize}[leftmargin=*]
+  \item rewards are broadcast at the sequence level,
+  \item process rewards are computed after generation rather than as token-aligned rewards,
+  \item the PPO implementation does not yet use full reward-to-go / GAE,
+  \item there is no reference-model KL penalty,
+  \item strict formatting can make exact-match evaluation fragile.
+\end{itemize}
+
+\end{document}
