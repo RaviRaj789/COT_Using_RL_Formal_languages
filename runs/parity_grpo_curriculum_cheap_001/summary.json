@@ -1,0 +1,27 @@
+{
+  "final_train_metrics": {
+    "loss": 0.00017619700520299375,
+    "policy_loss": 0.00017619700520299375,
+    "entropy": 0.08512979745864868,
+    "reward": 0.4375,
+    "rollout_count": 8.0,
+    "generated_tokens_mean": 41.0,
+    "cot_tokens_mean": 39.0,
+    "cot_tokens_total": 312.0,
+    "cot_match_accuracy": 0.4375,
+    "cot_match_percent": 43.75,
+    "process_match_accuracy": 0.4375,
+    "process_match_percent": 43.75,
+    "output_match_accuracy": 0.0,
+    "output_match_percent": 0.0,
+    "exact_match_accuracy": 0.0,
+    "exact_match_percent": 0.0,
+    "curriculum_stage": 3.0,
+    "train_min_len": 40.0,
+    "train_max_len": 80.0,
+    "generation_max_new_tokens": 96.0,
+    "generation_temperature": 0.25
+  },
+  "train_log_every": 25,
+  "checkpoint": "runs/parity_grpo_curriculum_cheap_001/checkpoint.pt"
+}

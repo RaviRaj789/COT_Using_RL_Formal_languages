@@ -24,6 +24,7 @@ train:
   eval_every: 0
   save_every: 100
   overwrite_run: false
+  eval_every: 100
 
 model:
   d_model: 128

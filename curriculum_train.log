@@ -1,0 +1,34 @@
+/usr/local/easybuild_allnodes/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/cuda/__init__.py:146: UserWarning: 
+NVIDIA L40S with CUDA capability sm_89 is not compatible with the current PyTorch installation.
+The current PyTorch install supports CUDA capabilities sm_60 sm_70 sm_75.
+If you want to use the NVIDIA L40S GPU with PyTorch, please check the instructions at https://pytorch.org/get-started/locally/
+
+  warnings.warn(incompatible_device_warn.format(device_name, capability, " ".join(arch_list), device_name))
+Loaded pretrained weights from runs/parity_grpo_from_sft_safe/checkpoint.pt
+Run directory already exists: runs/parity_grpo_curriculum_cheap
+Writing this run to: runs/parity_grpo_curriculum_cheap_002
+grpo_process_terminal:   0%|          | 0/400 [00:00<?, ?it/s]grpo_process_terminal:   0%|          | 0/400 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/usr/local/easybuild_allnodes/software/Python/3.10.4-GCCcore-11.3.0/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/local/easybuild_allnodes/software/Python/3.10.4-GCCcore-11.3.0/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/train.py", line 488, in <module>
+    main()
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/train.py", line 482, in main
+    path = train(cfg, init_from_checkpoint=args.init_from_checkpoint)
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/train.py", line 351, in train
+    collect_rollout(
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/rl.py", line 51, in collect_rollout
+    sampled, logps, _ = model.generate(prompt_ids, tokenizer.eos_id, max_new_tokens, temperature, device)
+  File "/usr/local/easybuild_allnodes/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/autograd/grad_mode.py", line 27, in decorate_context
+    return func(*args, **kwargs)
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/model.py", line 67, in generate
+    logits, vals = self(ids)
+  File "/usr/local/easybuild_allnodes/software/PyTorch/1.12.1-foss-2022a-CUDA-11.7.0/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1130, in _call_impl
+    return forward_call(*input, **kwargs)
+  File "/home/rxk789/COT_Using_RL_Formal_languages/formal_rl_length_generalization/model.py", line 45, in forward
+    pos = torch.arange(seq_len, device=input_ids.device).unsqueeze(0).expand(bsz, -1)
+RuntimeError: CUDA error: no kernel image is available for execution on the device
+CUDA kernel errors might be asynchronously reported at some other API call,so the stacktrace below might be incorrect.
+For debugging consider passing CUDA_LAUNCH_BLOCKING=1.

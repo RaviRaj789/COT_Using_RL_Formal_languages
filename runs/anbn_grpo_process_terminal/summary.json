@@ -1,0 +1,21 @@
+{
+  "final_train_metrics": {
+    "loss": -0.10659928619861603,
+    "policy_loss": -0.03928396850824356,
+    "entropy": 6.731532096862793,
+    "reward": 0.24258308112621307,
+    "rollout_count": 8.0,
+    "generated_tokens_mean": 206.375,
+    "cot_tokens_mean": 206.0,
+    "cot_tokens_total": 1648.0,
+    "cot_match_accuracy": 0.24258305921052628,
+    "cot_match_percent": 24.258305921052628,
+    "process_match_accuracy": 0.24258305921052628,
+    "process_match_percent": 24.258305921052628,
+    "output_match_accuracy": 0.0,
+    "output_match_percent": 0.0,
+    "exact_match_accuracy": 0.0,
+    "exact_match_percent": 0.0
+  },
+  "train_log_every": 50
+}

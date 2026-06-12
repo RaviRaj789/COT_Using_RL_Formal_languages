@@ -1,0 +1,27 @@
+{
+  "final_train_metrics": {
+    "loss": 0.0041904025711119175,
+    "policy_loss": 0.0041904025711119175,
+    "entropy": 0.14380979537963867,
+    "reward": 1.2156250476837158,
+    "rollout_count": 8.0,
+    "generated_tokens_mean": 49.625,
+    "cot_tokens_mean": 47.625,
+    "cot_tokens_total": 381.0,
+    "cot_match_accuracy": 0.5725000000000001,
+    "cot_match_percent": 57.250000000000014,
+    "process_match_accuracy": 0.5725000000000001,
+    "process_match_percent": 57.250000000000014,
+    "output_match_accuracy": 0.5,
+    "output_match_percent": 50.0,
+    "exact_match_accuracy": 0.0,
+    "exact_match_percent": 0.0,
+    "curriculum_stage": 4.0,
+    "train_min_len": 40.0,
+    "train_max_len": 52.0,
+    "generation_max_new_tokens": 64.0,
+    "generation_temperature": 0.2
+  },
+  "train_log_every": 25,
+  "checkpoint": "runs/parity_grpo_curriculum_boundary/checkpoint.pt"
+}

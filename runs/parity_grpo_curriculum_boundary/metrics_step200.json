@@ -1,0 +1,38 @@
+{
+  "step": 200,
+  "train": {
+    "loss": 0.008397823199629784,
+    "policy_loss": 0.008397823199629784,
+    "entropy": 0.08618548512458801,
+    "reward": 2.3562498092651367,
+    "rollout_count": 8.0,
+    "generated_tokens_mean": 42.0,
+    "cot_tokens_mean": 40.0,
+    "cot_tokens_total": 320.0,
+    "cot_match_accuracy": 0.9281250000000001,
+    "cot_match_percent": 92.81250000000001,
+    "process_match_accuracy": 0.9281250000000001,
+    "process_match_percent": 92.81250000000001,
+    "output_match_accuracy": 0.5,
+    "output_match_percent": 50.0,
+    "exact_match_accuracy": 0.0,
+    "exact_match_percent": 0.0,
+    "curriculum_stage": 2.0,
+    "train_min_len": 35.0,
+    "train_max_len": 44.0,
+    "generation_max_new_tokens": 56.0,
+    "generation_temperature": 0.25
+  },
+  "eval": {
+    "train_1_40": {
+      "process": 0.9838747352079394,
+      "terminal": 0.925,
+      "exact": 0.85
+    },
+    "ood_41_80": {
+      "process": 0.5461995447467074,
+      "terminal": 0.45,
+      "exact": 0.0
+    }
+  }
+}
