@@ -36,4 +36,4 @@ generation:
 
 # Used only for periodic/manual eval after patching train.py/eval.py.
 eval_generation:
-  max_new_tokens: 520
+  max_new_tokens: 200
