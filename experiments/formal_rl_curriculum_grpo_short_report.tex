@@ -1,0 +1,144 @@
+
+\documentclass[11pt]{article}
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\hypersetup{colorlinks=true, linkcolor=blue, urlcolor=blue}
+\graphicspath{{figures/}}
+
+\title{Formal RL Length Generalization: Curriculum GRPO Results on Parity}
+\author{Ravi Raj Kumar}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This short report summarizes the latest parity experiment from the \texttt{formal\_rl\_length\_generalization} project. The goal is to test whether a small causal Transformer can learn an algorithmic trace for parity and transfer beyond the supervised training lengths. The experiment first trains a supervised chain-of-thought baseline on lengths $1$--$40$ without a curriculum, then fine-tunes it with a boundary-focused GRPO curriculum that gradually shifts training toward lengths near and slightly beyond 40. The most useful result is that curriculum GRPO improves the OOD process-state score on lengths $41$--$80$ from 0.5261 to 0.5603, a gain of 3.41 percentage points, while preserving very high in-distribution process accuracy near 97\%. This indicates that process rewards are beginning to improve intermediate algorithmic state tracking beyond the SFT training range.
+\end{abstract}
+
+\section{Objective}
+The project studies length generalization for formal languages using explicit symbolic traces. For an input string $x_1,\ldots,x_n$, the model is prompted to generate the step-by-step parity states followed by a final answer. For parity, the oracle state update is
+\[
+p_0=0, \qquad p_t=p_{t-1}\oplus x_t.
+\]
+The key hypothesis is that dense process feedback on the intermediate states can encourage the model to learn the transition rule itself, rather than only fitting final labels on short strings.
+
+\section{Training Setup: No Curriculum vs. Curriculum}
+The current notebook output gives a clean comparison between an SFT seed policy trained without a curriculum and a curriculum-based GRPO fine-tuning run.
+
+\textbf{No-curriculum SFT baseline.} The SFT model is trained directly on the full in-distribution range $1$--$40$ using oracle traces and teacher forcing. This establishes the imitation-learning baseline: the model sees correct traces during training, but the length distribution is fixed and does not explicitly stress the boundary between training and OOD lengths.
+
+\textbf{Curriculum GRPO fine-tuning.} GRPO starts from the SFT policy and uses a process-plus-terminal reward. The process reward scores the fraction of generated parity states that match the oracle trace, while the terminal reward scores the final parity answer. The reward weighting emphasizes process correctness: the observed maximum reward of 3.0 corresponds to a process-heavy setup such as $2R_{process}+R_{terminal}$. The curriculum then moves from standard training lengths toward boundary lengths, as shown in Table~\ref{tab:curriculum}.
+
+\begin{table}[H]
+\centering
+\caption{Curriculum schedule observed in the GRPO notebook logs.}
+\label{tab:curriculum}
+\begin{tabular}{ccccc}
+\toprule
+Stage & Logged steps & Train lengths & Max new tokens & Temp. \\
+\midrule
+1 & 25--100 & 1--40 & 64 & 0.25 \\
+2 & 125--250 & 35--44 & 56 & 0.25 \\
+3 & 275--375 & 38--48 & 60 & 0.20 \\
+4 & 400--500 & 40--52 & 64 & 0.20 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+This schedule is important because stages 2--4 explicitly expose the policy to boundary lengths such as $35$--$44$, $38$--$48$, and $40$--$52$. In other words, the RL stage is not simply repeating SFT on $1$--$40$; it is deliberately pushing the model toward the region where length generalization begins.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{04_curriculum_schedule.png}
+  \caption{Curriculum schedule used during GRPO fine-tuning. The later stages focus on the transition from the original training region into the first OOD boundary region.}
+  \label{fig:curriculum}
+\end{figure}
+
+\section{Evaluation Protocol}
+The current notebook reports evaluation on two buckets:
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Train bucket:} lengths $1$--$40$, matching the SFT training range.
+  \item \textbf{OOD boundary bucket:} lengths $41$--$80$, the first length-generalization region beyond the SFT range.
+\end{itemize}
+Each checkpoint is evaluated using three metrics: process accuracy, terminal accuracy, and exact-match accuracy. Process accuracy is the main diagnostic metric for this stage because it directly measures whether the model is tracking the intermediate parity state.
+
+\section{Main Results and Achievements}
+The curriculum GRPO run produced three useful achievements.
+
+\textbf{1. Strong in-distribution trace tracking was preserved.} At the final checkpoint, GRPO reached 0.9705 process accuracy on lengths $1$--$40$, slightly above the SFT baseline of 0.9683. This shows that the RL curriculum did not erase the supervised trace behavior learned during SFT.
+
+\textbf{2. OOD process accuracy improved under curriculum training.} The most important result is the process-score improvement on lengths $41$--$80$. The SFT baseline achieves 0.5261, while the final curriculum GRPO checkpoint reaches 0.5603. This is a 3.41-point improvement on the first OOD bucket. The best OOD process checkpoint occurs at step 500 with score 0.5603.
+
+\textbf{3. The curriculum created a useful boundary-training diagnostic.} The run makes it possible to distinguish between final-answer performance and intermediate algorithmic progress. For example, the best train-bucket terminal accuracy reaches 0.9250 at step 200, and best train exact match reaches 0.8500 at step 200. On the OOD bucket, the process score improves most clearly, showing that the model is gaining some ability to follow parity states outside the original SFT range.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}{0.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{05_eval_process_by_length_bucket.png}
+    \caption{Process accuracy over checkpoints}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.49\linewidth}
+    \centering
+    \includegraphics[width=\linewidth]{06_final_sft_vs_grpo_process.png}
+    \caption{Final SFT vs. curriculum GRPO}
+  \end{subfigure}
+  \caption{Process accuracy is the strongest positive result. Curriculum GRPO slightly improves OOD trace-state matching while preserving high train-bucket process accuracy.}
+  \label{fig:process_results}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Final SFT vs. curriculum GRPO comparison. Positive deltas mean GRPO is higher.}
+\label{tab:main_comparison}
+\begin{tabular}{llrrr}
+\toprule
+Bucket & Metric & SFT & GRPO final & Delta \\
+\midrule
+Train 1--40 & Process & 0.9683 & 0.9705 & +0.0021 \\
+Train 1--40 & Terminal & 0.8750 & 0.8250 & -0.0500 \\
+Train 1--40 & Exact & 0.7750 & 0.7250 & -0.0500 \\
+OOD 41--80 & Process & 0.5261 & 0.5603 & +0.0341 \\
+OOD 41--80 & Terminal & 0.4750 & 0.3750 & -0.1000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Training Dynamics}
+Figure~\ref{fig:rollout} shows the logged GRPO rollout metrics. The model begins with high short-length rollout performance, then becomes more challenged as the curriculum shifts to boundary lengths. This is expected: longer traces require more autoregressive steps, so a single local state error can propagate into later trace and formatting errors. By the final logged step, the rollout snapshot contains reward 1.2156, process match accuracy 0.5725, terminal/output match accuracy 0.5000, and mean generated length 49.62 tokens.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.88\linewidth]{01_grpo_rollout_reward_accuracy.png}
+  \caption{GRPO rollout reward and accuracy. The curve reflects increasing curriculum difficulty as training moves from standard SFT lengths to boundary lengths.}
+  \label{fig:rollout}
+\end{figure}
+
+\section{Interpretation}
+The main takeaway is that the curriculum GRPO run successfully changes the diagnostic signal in the desired direction: OOD process-state accuracy improves beyond the no-curriculum SFT baseline. This matters because process accuracy is the metric most directly connected to the intended algorithmic behavior. The model is not only being judged on the final parity label; it is being rewarded for following the stepwise parity transition.
+
+At the same time, terminal and exact-match metrics are stricter and require better sequence-level stability. The current result should therefore be viewed as a promising intermediate result: curriculum GRPO is beginning to improve the hidden-state tracking behavior that length generalization depends on. The next experiments should extend the same setup to more steps, larger GRPO groups, and evaluation buckets $81$--$160$, $161$--$320$, and $321$--$500$.
+
+\section{Next Experiments}
+The next round should focus on strengthening the positive process-reward signal:
+\begin{enumerate}[leftmargin=*]
+  \item run a direct GRPO no-curriculum ablation using the same SFT checkpoint and fixed $1$--$40$ training lengths;
+  \item increase GRPO samples per prompt to reduce noisy group-relative advantages;
+  \item evaluate every checkpoint on all OOD buckets up to length 500;
+  \item add a formatting-aware reward term so correct traces are less likely to lose exact match because of minor output-format errors;
+  \item repeat the curriculum experiment on modular counting and $a^*b^*$ after parity stabilizes.
+\end{enumerate}
+
+\end{document}
