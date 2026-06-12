@@ -76,6 +76,8 @@ Request a GPU interactively:
 
 ```bash
 salloc --account=sxr358 --partition=gpu --gres=gpu:1 --nodes=1 --cpus-per-task=4 --mem=32G --time=02:00:00 --exclude=gput052
+
+salloc --account=sxr358 --partition=gpu --gres=gpu:1 --nodes=1 --cpus-per-task=4 --mem=32G --time=02:00:00   --exclude=gput052,gput065
 ```
 
 Enter allocated node:
@@ -119,6 +121,7 @@ exit
 Cancel allocation:
 
 ```bash
+squeue -u $USER
 scancel JOB_ID
 ```
 
