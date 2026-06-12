@@ -1,0 +1,91 @@
+run_name: parity_grpo_curriculum_cheap
+seed: 3
+
+task:
+  name: parity
+
+algorithm:
+  name: grpo_process_terminal
+
+  # 12GB GPU safe: total rollouts = 2 * 4 = 8
+  groups_per_step: 2
+  samples_per_prompt: 4
+
+  clip_eps: 0.1
+  entropy_coef: 0.0
+
+  # Defaults. Curriculum stages override these.
+  process_weight: 2.0
+  terminal_weight: 1.0
+
+train:
+  steps: 400
+  batch_size: 4
+  lr: 0.000005
+
+  train_min_len: 1
+  train_max_len: 40
+
+  # Allows curriculum beyond original 1-40.
+  train_max_len_cap: 120
+
+  log_every: 25
+
+  # Set to 0 to avoid expensive eval during training.
+  # We will run eval manually after training.
+  eval_every: 0
+
+  # Save intermediate checkpoints in case HPC time expires.
+  save_every: 100
+
+  # Important: do not overwrite old runs.
+  overwrite_run: false
+
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  dropout: 0.0
+
+generation:
+  temperature: 0.3
+  max_new_tokens: 64
+
+# Used by manual eval unless overridden on command line.
+eval_generation:
+  temperature: 0.3
+  max_new_tokens: 128
+  max_length: 80
+
+curriculum:
+  stages:
+    - name: preserve_1_40
+      start_step: 1
+      end_step: 100
+      train_min_len: 1
+      train_max_len: 40
+      temperature: 0.3
+      max_new_tokens: 64
+      process_weight: 2.0
+      terminal_weight: 1.0
+
+    - name: boundary_35_64
+      start_step: 101
+      end_step: 250
+      train_min_len: 35
+      train_max_len: 64
+      temperature: 0.3
+      max_new_tokens: 80
+      process_weight: 1.5
+      terminal_weight: 1.0
+
+    - name: extend_40_80
+      start_step: 251
+      end_step: 400
+      train_min_len: 40
+      train_max_len: 80
+      temperature: 0.25
+      max_new_tokens: 96
+      process_weight: 1.0
+      terminal_weight: 1.5

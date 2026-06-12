@@ -11,10 +11,14 @@ from .utils import device_auto, save_json
 
 def main() -> None:
     parser = argparse.ArgumentParser()
+
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--samples-per-length", type=int, default=2)
     parser.add_argument("--max-new-tokens", type=int, default=None)
+    parser.add_argument("--max-length", type=int, default=None)
+    parser.add_argument("--temperature", type=float, default=None)
     parser.add_argument("--out", default=None)
+
     args = parser.parse_args()
 
     device = device_auto()
@@ -33,11 +37,6 @@ def main() -> None:
     model.load_state_dict(ckpt["model"])
     model.eval()
 
-    # Priority:
-    # 1. command-line override: --max-new-tokens
-    # 2. eval_generation.max_new_tokens from YAML/checkpoint config
-    # 3. generation.max_new_tokens from YAML/checkpoint config
-    # 4. fallback 520
     if args.max_new_tokens is not None:
         max_new_tokens = args.max_new_tokens
     else:
@@ -46,19 +45,33 @@ def main() -> None:
             cfg.get("generation", {}).get("max_new_tokens", 520),
         )
 
+    if args.temperature is not None:
+        temperature = args.temperature
+    else:
+        temperature = cfg.get("eval_generation", {}).get("temperature", 0.8)
+
+    if args.max_length is not None:
+        max_length = args.max_length
+    else:
+        max_length = cfg.get("eval_generation", {}).get("max_length", None)
+
     metrics = evaluate_buckets(
-        model,
-        tokenizer,
-        task,
-        args.samples_per_length,
-        max_new_tokens,
-        device,
+        model=model,
+        tokenizer=tokenizer,
+        task=task,
+        samples_per_length=args.samples_per_length,
+        max_new_tokens=max_new_tokens,
+        device=device,
+        max_length=max_length,
+        temperature=temperature,
     )
 
     result = {
         "checkpoint": args.checkpoint,
         "samples_per_length": args.samples_per_length,
         "max_new_tokens": max_new_tokens,
+        "max_length": max_length,
+        "temperature": temperature,
         "metrics": metrics,
     }
 
