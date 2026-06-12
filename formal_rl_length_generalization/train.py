@@ -125,6 +125,9 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
     gen = cfg.get("generation", {})
     max_new = gen.get("max_new_tokens", 520)
     temp = gen.get("temperature", 1.0)
+    eval_gen = cfg.get("eval_generation", {})
+    eval_max_new = eval_gen.get("max_new_tokens", max_new)
+
     progress = trange(1, steps + 1, desc=alg)
     last_metrics = {}
     train_history = []
@@ -193,9 +196,9 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
         if log_every and step % log_every == 0:
             log_train_metrics(run_dir, train_history, step, alg, last_metrics, started_at)
         if step % cfg["train"].get("eval_every", 200) == 0:
-            metrics = evaluate_buckets(model, tokenizer, task, 1, max_new, device)
+            metrics = evaluate_buckets(model, tokenizer, task, 1, eval_max_new, device)
             save_json({"step": step, "train": last_metrics, "eval": metrics}, run_dir / f"metrics_step{step}.json")
-    ckpt = {
+            ckpt = {
         "config": cfg,
         "model": model.state_dict(),
         "vocab": tokenizer.id_to_token,
