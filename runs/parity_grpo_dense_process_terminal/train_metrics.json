@@ -1,0 +1,39 @@
+[
+  {
+    "step": 20,
+    "algorithm": "grpo_process_terminal",
+    "elapsed_sec": 29.26234245300293,
+    "train": {
+      "loss": 0.2897680997848511,
+      "policy_loss": 0.2897680997848511,
+      "entropy": 6.828563690185547,
+      "reward": 0.00439453125,
+      "rollout_count": 8.0,
+      "generated_tokens_mean": 63.875,
+      "cot_tokens_mean": 59.25,
+      "cot_tokens_total": 474.0,
+      "cot_match_accuracy": 0.0,
+      "cot_match_percent": 0.0,
+      "process_match_accuracy": 0.0,
+      "process_match_percent": 0.0,
+      "output_match_accuracy": 0.0,
+      "output_match_percent": 0.0,
+      "exact_match_accuracy": 0.0,
+      "exact_match_percent": 0.0,
+      "terminal_reward": 0.0,
+      "sequence_process_reward": 0.0,
+      "dense_process_reward": 0.021982758620689654,
+      "mean_step_reward": 0.021982758620689654,
+      "number_of_correct_steps": 0.0,
+      "number_of_generated_steps": 59.375,
+      "number_of_oracle_steps": 19.5,
+      "step_alignment_accuracy": 0.9913793103448276,
+      "total_reward": 0.04396551724137931,
+      "curriculum_stage": 0.0,
+      "train_min_len": 1.0,
+      "train_max_len": 40.0,
+      "generation_max_new_tokens": 64.0,
+      "generation_temperature": 0.3
+    }
+  }
+]
