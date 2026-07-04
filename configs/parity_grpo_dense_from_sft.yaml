@@ -1,0 +1,46 @@
+run_name: parity_grpo_dense_from_sft
+seed: 1
+
+task:
+  name: parity
+
+algorithm:
+  name: grpo_process_terminal
+  groups_per_step: 2
+  samples_per_prompt: 4
+  clip_eps: 0.1
+  entropy_coef: 0.0
+  process_weight: 2.0
+  terminal_weight: 1.0
+  # Dense process reward settings (see formal_rl_length_generalization/dense_reward.py).
+  reward_mode: dense
+  dense_step_weight: 1.0
+  partial_credit: true
+  normalize_dense_reward: true
+
+train:
+  steps: 500
+  batch_size: 4
+  lr: 0.000005
+  train_min_len: 1
+  train_max_len: 40
+  log_every: 50
+  eval_every: 50
+
+model:
+  d_model: 128
+  n_heads: 4
+  n_layers: 4
+  d_ff: 512
+  dropout: 0.0
+
+# Same "safe" hyperparameters as configs/parity_grpo_from_sft.yaml (low lr, tight
+# clip_eps, no entropy bonus, low sampling temperature) so this is a fair
+# apples-to-apples comparison against the sequence-mode warm start in
+# runs/parity_grpo_from_sft_safe -- only reward_mode differs.
+generation:
+  temperature: 0.3
+  max_new_tokens: 64
+
+eval_generation:
+  max_new_tokens: 200
