@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
-from typing import List, Optional, Protocol, Sequence
+from typing import Any, List, Optional, Protocol, Sequence, Tuple
 
 
 TRAIN_MIN_LEN = 1
@@ -34,6 +34,15 @@ class Reward:
 
 
 class FormalTask(Protocol):
+    """Formal task interface.
+
+    The ``step_*`` / ``*_state`` / ``*_transition`` methods below define a small
+    automaton schema (state, symbol -> next state) that is independent of the
+    ``reward`` method above. They are used only by dense_reward.py to build
+    per-step partial-credit scores and are what a new task must implement to
+    plug into dense process rewards.
+    """
+
     name: str
 
     def sample(self, n: int, rng: random.Random) -> Example:
@@ -43,6 +52,29 @@ class FormalTask(Protocol):
         ...
 
     def tokens(self) -> List[str]:
+        ...
+
+    def step_size(self) -> int:
+        """Number of trace tokens that make up one reasoning step."""
+        ...
+
+    def initial_state(self) -> Any:
+        ...
+
+    def apply_transition(self, state: Any, symbol: str) -> Any:
+        """Oracle transition function: (state, input symbol) -> next state."""
+        ...
+
+    def state_to_step_tokens(self, state: Any) -> Tuple[str, ...]:
+        """Render a state as the step tokens an oracle trace would emit for it."""
+        ...
+
+    def parse_step_state(self, step_tokens: Sequence[str]) -> Optional[Any]:
+        """Parse a generated step's tokens back into a state, or None if malformed."""
+        ...
+
+    def step_match_score(self, oracle_step: Sequence[str], gen_step: Sequence[str]) -> float:
+        """Similarity in [0, 1] between an oracle step and a generated step."""
         ...
 
 
@@ -81,6 +113,30 @@ class ParityTask:
     def tokens(self) -> List[str]:
         return ["0", "1", "P0", "P1"]
 
+    def step_size(self) -> int:
+        return 1
+
+    def initial_state(self) -> Any:
+        return 0
+
+    def apply_transition(self, state: Any, symbol: str) -> Any:
+        return int(state) ^ int(symbol)
+
+    def state_to_step_tokens(self, state: Any) -> Tuple[str, ...]:
+        return (f"P{state}",)
+
+    def parse_step_state(self, step_tokens: Sequence[str]) -> Optional[Any]:
+        if len(step_tokens) != 1 or not step_tokens[0].startswith("P"):
+            return None
+        try:
+            value = int(step_tokens[0][1:])
+        except ValueError:
+            return None
+        return value if value in (0, 1) else None
+
+    def step_match_score(self, oracle_step: Sequence[str], gen_step: Sequence[str]) -> float:
+        return float(tuple(oracle_step) == tuple(gen_step))
+
 
 class ModularCountingTask:
     def __init__(self, k: int):
@@ -105,6 +161,30 @@ class ModularCountingTask:
 
     def tokens(self) -> List[str]:
         return ["0", "1", "ACCEPT", "REJECT"] + [f"C{i}" for i in range(self.k)]
+
+    def step_size(self) -> int:
+        return 1
+
+    def initial_state(self) -> Any:
+        return 0
+
+    def apply_transition(self, state: Any, symbol: str) -> Any:
+        return (int(state) + int(symbol)) % self.k
+
+    def state_to_step_tokens(self, state: Any) -> Tuple[str, ...]:
+        return (f"C{state}",)
+
+    def parse_step_state(self, step_tokens: Sequence[str]) -> Optional[Any]:
+        if len(step_tokens) != 1 or not step_tokens[0].startswith("C"):
+            return None
+        try:
+            value = int(step_tokens[0][1:])
+        except ValueError:
+            return None
+        return value if 0 <= value < self.k else None
+
+    def step_match_score(self, oracle_step: Sequence[str], gen_step: Sequence[str]) -> float:
+        return float(tuple(oracle_step) == tuple(gen_step))
 
 
 class AStarBStarTask:
@@ -135,6 +215,36 @@ class AStarBStarTask:
 
     def tokens(self) -> List[str]:
         return ["a", "b", "S0", "S1", "S2", "ACCEPT", "REJECT"]
+
+    def step_size(self) -> int:
+        return 1
+
+    def initial_state(self) -> Any:
+        return 0
+
+    def apply_transition(self, state: Any, symbol: str) -> Any:
+        if state == 0 and symbol == "a":
+            return 0
+        if state == 0 and symbol == "b":
+            return 1
+        if state == 1 and symbol == "b":
+            return 1
+        return 2
+
+    def state_to_step_tokens(self, state: Any) -> Tuple[str, ...]:
+        return (f"S{state}",)
+
+    def parse_step_state(self, step_tokens: Sequence[str]) -> Optional[Any]:
+        if len(step_tokens) != 1 or not step_tokens[0].startswith("S"):
+            return None
+        try:
+            value = int(step_tokens[0][1:])
+        except ValueError:
+            return None
+        return value if value in (0, 1, 2) else None
+
+    def step_match_score(self, oracle_step: Sequence[str], gen_step: Sequence[str]) -> float:
+        return float(tuple(oracle_step) == tuple(gen_step))
 
 
 class ANBNTask:
@@ -189,6 +299,56 @@ class ANBNTask:
         return ["a", "b", "A_PHASE", "B_PHASE", "DEAD", "ACCEPT", "REJECT"] + [
             f"BAL_{i}" for i in range(-BALANCE_CAP, BALANCE_CAP + 1)
         ]
+
+    def step_size(self) -> int:
+        return 2
+
+    def initial_state(self) -> Any:
+        return ("A_PHASE", 0)
+
+    def apply_transition(self, state: Any, symbol: str) -> Any:
+        phase, bal = state
+        if symbol == "a":
+            if phase == "B_PHASE":
+                phase = "DEAD"
+            elif phase != "DEAD":
+                bal = _clamp_balance(bal + 1)
+        elif symbol == "b":
+            if phase != "DEAD":
+                phase = "B_PHASE"
+                bal = _clamp_balance(bal - 1)
+        return (phase, bal)
+
+    def state_to_step_tokens(self, state: Any) -> Tuple[str, ...]:
+        phase, bal = state
+        return (phase, f"BAL_{bal}")
+
+    def parse_step_state(self, step_tokens: Sequence[str]) -> Optional[Any]:
+        if len(step_tokens) != 2:
+            return None
+        phase, bal_token = step_tokens
+        if phase not in {"A_PHASE", "B_PHASE", "DEAD"}:
+            return None
+        bal = _parse_balance(bal_token)
+        return None if bal is None else (phase, bal)
+
+    def step_match_score(self, oracle_step: Sequence[str], gen_step: Sequence[str]) -> float:
+        if len(gen_step) != 2:
+            return 0.0
+        phase_true, bal_true_token = oracle_step
+        phase_pred, bal_pred_token = gen_step
+        bal_true = _parse_balance(bal_true_token)
+        bal_pred = _parse_balance(bal_pred_token)
+        phase_r = float(phase_pred == phase_true)
+        if bal_true is None or bal_pred is None:
+            bal_r = 0.0
+        else:
+            bal_r = 1.0 - min(abs(bal_pred - bal_true), BALANCE_CAP) / BALANCE_CAP
+        return 0.5 * phase_r + 0.5 * bal_r
+
+
+def _clamp_balance(value: int) -> int:
+    return max(-BALANCE_CAP, min(BALANCE_CAP, value))
 
 
 def _parse_balance(token: str) -> Optional[int]:

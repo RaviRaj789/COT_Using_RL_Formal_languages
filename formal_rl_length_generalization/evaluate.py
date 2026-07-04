@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 
 import torch
 
+from .dense_reward import step_level_metrics
 from .model import CausalTransformerPolicy
 from .tasks import FormalTask, OOD_BUCKETS
 from .tokenizer import Tokenizer
@@ -21,12 +22,16 @@ def evaluate_lengths(
     device: torch.device,
     seed: int = 0,
     temperature: float = 0.8,
-) -> dict[str, float]:
+) -> dict:
     rng = random.Random(seed)
 
     process_scores = []
     terminal_scores = []
     exact_scores = []
+    step_accuracy_scores = []
+    mean_step_reward_scores = []
+    prefix_accuracy_scores = []
+    by_length: dict[int, list[float]] = {}
 
     model.eval()
 
@@ -46,15 +51,26 @@ def evaluate_lengths(
 
             decoded = tokenizer.decode(sampled)
             reward = task.reward(ex, decoded)
+            step_metrics = step_level_metrics(task, ex, decoded)
 
             process_scores.append(reward.process)
             terminal_scores.append(reward.terminal)
             exact_scores.append(float(decoded[: len(ex.target_tokens)] == ex.target_tokens))
+            step_accuracy_scores.append(step_metrics["step_alignment_accuracy"])
+            mean_step_reward_scores.append(step_metrics["mean_step_reward"])
+            prefix_accuracy_scores.append(step_metrics["prefix_accuracy"])
+            by_length.setdefault(n, []).append(step_metrics["mean_step_reward"])
 
     return {
         "process": sum(process_scores) / max(1, len(process_scores)),
         "terminal": sum(terminal_scores) / max(1, len(terminal_scores)),
         "exact": sum(exact_scores) / max(1, len(exact_scores)),
+        "final_answer_accuracy": sum(terminal_scores) / max(1, len(terminal_scores)),
+        "full_trace_exact_match": sum(exact_scores) / max(1, len(exact_scores)),
+        "step_accuracy": sum(step_accuracy_scores) / max(1, len(step_accuracy_scores)),
+        "mean_step_reward": sum(mean_step_reward_scores) / max(1, len(mean_step_reward_scores)),
+        "prefix_accuracy": sum(prefix_accuracy_scores) / max(1, len(prefix_accuracy_scores)),
+        "step_accuracy_by_length": {n: sum(v) / len(v) for n, v in sorted(by_length.items())},
     }
 
 
@@ -67,7 +83,7 @@ def evaluate_buckets(
     device: torch.device,
     max_length: Optional[int] = None,
     temperature: float = 0.8,
-) -> dict[str, dict[str, float]]:
+) -> dict[str, dict]:
     """
     Evaluate train and OOD buckets.
 

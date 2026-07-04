@@ -63,6 +63,24 @@ def resolve_run_dir(cfg: dict, task_name: str, alg: str) -> Path:
     raise RuntimeError(f"Could not create a non-overwriting run directory for base: {base}")
 
 
+def resolve_reward_kwargs(acfg: dict, stage: dict) -> dict:
+    """Resolve reward-related knobs from the curriculum stage, falling back to algorithm config.
+
+    reward_mode="sequence" reproduces the original single-scalar-per-token reward exactly;
+    reward_mode="dense" turns on per-step partial-credit rewards from dense_reward.py.
+    """
+    return {
+        "process_weight": float(stage.get("process_weight", acfg.get("process_weight", 1.0))),
+        "terminal_weight": float(stage.get("terminal_weight", acfg.get("terminal_weight", 1.0))),
+        "reward_mode": str(stage.get("reward_mode", acfg.get("reward_mode", "sequence"))),
+        "dense_step_weight": float(stage.get("dense_step_weight", acfg.get("dense_step_weight", 1.0))),
+        "partial_credit": bool(stage.get("partial_credit", acfg.get("partial_credit", True))),
+        "normalize_dense_reward": bool(
+            stage.get("normalize_dense_reward", acfg.get("normalize_dense_reward", True))
+        ),
+    }
+
+
 def get_curriculum_stage(cfg: dict, step: int) -> tuple[int, dict]:
     stages = cfg.get("curriculum", {}).get("stages", [])
 
@@ -284,12 +302,7 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
         elif alg.startswith("ppo_"):
             acfg = cfg["algorithm"]
 
-            process_weight = float(
-                stage.get("process_weight", acfg.get("process_weight", 1.0))
-            )
-            terminal_weight = float(
-                stage.get("terminal_weight", acfg.get("terminal_weight", 1.0))
-            )
+            reward_kwargs = resolve_reward_kwargs(acfg, stage)
 
             rollouts = [
                 collect_rollout(
@@ -301,8 +314,7 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
                     max_new_tokens=step_max_new,
                     temperature=step_temp,
                     device=device,
-                    process_weight=process_weight,
-                    terminal_weight=terminal_weight,
+                    **reward_kwargs,
                 )
                 for ex in sample_examples(
                     task,
@@ -328,12 +340,7 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
         elif alg.startswith("grpo_"):
             acfg = cfg["algorithm"]
 
-            process_weight = float(
-                stage.get("process_weight", acfg.get("process_weight", 1.0))
-            )
-            terminal_weight = float(
-                stage.get("terminal_weight", acfg.get("terminal_weight", 1.0))
-            )
+            reward_kwargs = resolve_reward_kwargs(acfg, stage)
 
             groups = []
 
@@ -357,8 +364,7 @@ def train(cfg: dict, init_from_checkpoint: Optional[str] = None) -> Path:
                             max_new_tokens=step_max_new,
                             temperature=step_temp,
                             device=device,
-                            process_weight=process_weight,
-                            terminal_weight=terminal_weight,
+                            **reward_kwargs,
                         )
                     )
 

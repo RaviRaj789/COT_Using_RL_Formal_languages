@@ -6,6 +6,7 @@ from typing import List
 import torch
 import torch.nn.functional as F
 
+from .dense_reward import compute_dense_reward
 from .model import CausalTransformerPolicy
 from .tasks import Example, FormalTask
 from .tokenizer import Tokenizer
@@ -23,6 +24,14 @@ class Rollout:
     output_match: float
     exact_match: float
     cot_tokens: int
+    reward_mode: str = "sequence"
+    dense_process_reward: float = 0.0
+    mean_step_reward: float = 0.0
+    num_correct_steps: int = 0
+    num_generated_steps: int = 0
+    num_oracle_steps: int = 0
+    step_alignment_accuracy: float = 0.0
+    total_reward: float = 0.0
 
 
 def reward_scalar(name: str, process: float, terminal: float, process_weight: float = 1.0, terminal_weight: float = 1.0) -> float:
@@ -46,12 +55,41 @@ def collect_rollout(
     device: torch.device,
     process_weight: float = 1.0,
     terminal_weight: float = 1.0,
+    reward_mode: str = "sequence",
+    dense_step_weight: float = 1.0,
+    partial_credit: bool = True,
+    normalize_dense_reward: bool = True,
 ) -> Rollout:
     prompt_ids = tokenizer.encode(example.prompt_tokens, add_bos=True)
     sampled, logps, _ = model.generate(prompt_ids, tokenizer.eos_id, max_new_tokens, temperature, device)
     decoded = tokenizer.decode(sampled)
-    reward = task.reward(example, decoded)
-    score = reward_scalar(algorithm_name, reward.process, reward.terminal, process_weight, terminal_weight)
+    raw_tokens = [tokenizer.id_to_token[i] for i in sampled]
+
+    # Dense diagnostics are computed for every rollout (both modes) so the same
+    # metrics can be logged regardless of reward_mode; only reward_mode="dense"
+    # actually uses `dense.token_rewards` as the RL training signal below.
+    dense = compute_dense_reward(
+        task,
+        example,
+        raw_tokens,
+        terminal_weight=terminal_weight,
+        process_weight=process_weight,
+        dense_step_weight=dense_step_weight,
+        partial_credit=partial_credit,
+        normalize_dense_reward=normalize_dense_reward,
+    )
+
+    if reward_mode == "dense":
+        rewards = dense.token_rewards
+        score = dense.total_reward
+    elif reward_mode == "sequence":
+        score = reward_scalar(
+            algorithm_name, dense.sequence_process_reward, dense.terminal_reward, process_weight, terminal_weight
+        )
+        rewards = [score] * len(sampled)
+    else:
+        raise ValueError(f"Unknown reward_mode: {reward_mode}")
+
     row = prompt_ids + sampled
     action_mask = [False] * len(prompt_ids) + [True] * len(sampled)
     cot_tokens = decoded.index("FINAL") if "FINAL" in decoded else len(decoded)
@@ -61,12 +99,20 @@ def collect_rollout(
         row,
         action_mask,
         logps,
-        [score] * len(sampled),
+        rewards,
         decoded,
-        reward.process,
-        reward.terminal,
+        dense.sequence_process_reward,
+        dense.terminal_reward,
         exact_match,
         cot_tokens,
+        reward_mode=reward_mode,
+        dense_process_reward=dense.dense_process_reward,
+        mean_step_reward=dense.mean_step_reward,
+        num_correct_steps=dense.num_correct_steps,
+        num_generated_steps=dense.num_generated_steps,
+        num_oracle_steps=dense.num_oracle_steps,
+        step_alignment_accuracy=dense.step_alignment_accuracy,
+        total_reward=score,
     )
 
 
@@ -79,6 +125,13 @@ def rollout_stats(rollouts: List[Rollout]) -> dict[str, float]:
     process_matches = [r.process_match for r in rollouts]
     output_matches = [r.output_match for r in rollouts]
     exact_matches = [r.exact_match for r in rollouts]
+    dense_process = [r.dense_process_reward for r in rollouts]
+    mean_step = [r.mean_step_reward for r in rollouts]
+    correct_steps = [r.num_correct_steps for r in rollouts]
+    gen_steps = [r.num_generated_steps for r in rollouts]
+    oracle_steps = [r.num_oracle_steps for r in rollouts]
+    align_acc = [r.step_alignment_accuracy for r in rollouts]
+    total_rewards = [r.total_reward for r in rollouts]
     return {
         "rollout_count": float(n),
         "generated_tokens_mean": sum(generated_tokens) / n,
@@ -92,6 +145,18 @@ def rollout_stats(rollouts: List[Rollout]) -> dict[str, float]:
         "output_match_percent": 100.0 * sum(output_matches) / n,
         "exact_match_accuracy": sum(exact_matches) / n,
         "exact_match_percent": 100.0 * sum(exact_matches) / n,
+        # Dense process reward diagnostics (task 7). Populated for every
+        # rollout regardless of reward_mode; only "dense" mode uses the
+        # underlying per-token rewards for the RL update itself.
+        "terminal_reward": sum(output_matches) / n,
+        "sequence_process_reward": sum(process_matches) / n,
+        "dense_process_reward": sum(dense_process) / n,
+        "mean_step_reward": sum(mean_step) / n,
+        "number_of_correct_steps": sum(correct_steps) / n,
+        "number_of_generated_steps": sum(gen_steps) / n,
+        "number_of_oracle_steps": sum(oracle_steps) / n,
+        "step_alignment_accuracy": sum(align_acc) / n,
+        "total_reward": sum(total_rewards) / n,
     }
 
 
